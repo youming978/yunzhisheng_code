@@ -1,0 +1,65 @@
+from fileinput import filename
+import tensorflow as tf
+import keras
+import os
+import numpy as np
+from PIL import Image
+from tkinter import filedialog
+import tkinter as tk
+import win32ui
+
+mnist = keras.datasets.mnist
+(x_train,y_train),(x_test,y_test) = mnist.load_data()
+x_train,x_test = x_train/255.0,x_test/255.0
+
+filename = "./checkpoint/test_5.jpg"
+check_path = "./checkpoint/mnist.ckpt"
+callback = tf.keras.callbacks.ModelCheckpoint(
+    filepath = check_path,
+    save_weights_only = True,
+    save_best_only = True
+    )
+
+
+model = keras.models.Sequential([
+    keras.layers.Flatten(),
+    keras.layers.Dense(128,activation = 'relu'),
+    keras.layers.Dense(10,activation = 'softmax')
+    ])
+
+model.compile(
+    optimizer = 'adam',
+    loss = keras.losses.SparseCategoricalCrossentropy(from_logits=False),
+    metrics = ['sparse_categorical_accuracy']
+    )
+
+
+
+if os.path.exists("./checkpoint/mnist.ckpt.index"):
+    print("---------------------network loading---------------------")
+    model.load_weights("./checkpoint/mnist.ckpt")
+    print("---------------------OK----------------------------------")
+
+model.fit(x_train,y_train,batch_size = 50,epochs=20,validation_data=(x_test,y_test),validation_freq=1,callbacks = [callback])
+model.summary()
+
+if os.path.exists(str(filename)):
+    print("--------------------image loaded--------------------")
+    x = Image.open(str(filename)).resize((28,28),Image.ANTIALIAS).convert('L')
+
+else:
+    print("no")
+
+x = np.array(x)
+
+for i in range(28):
+        for j in range(28):
+            if x[i][j] < 200:
+                x[i][j] = 255
+            else: x[i][j] = 0
+
+x = x/255.0
+x = x[tf.newaxis,...]
+pred = model.predict(x) 
+print(np.argmax(pred,axis = 1))
+
